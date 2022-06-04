@@ -48,7 +48,7 @@ impl TryFrom<String> for Post {
           for _ in 0..(level as u8) {
             header_tag.push_str("#");
           }
-          content.push_str(format!("{} ", &header_tag).as_str());
+          content.push_str(format!("\n{} ", &header_tag).as_str());
         },
         Event::Start(Tag::BlockQuote) => {
           block_quote = true;
