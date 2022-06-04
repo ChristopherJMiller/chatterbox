@@ -53,7 +53,7 @@ fn main() {
         entries.push(PostEntry {
           name: post.title,
           description,
-          path: format!("/posts/{}.json", name),
+          path: name,
         });
       }
     }
