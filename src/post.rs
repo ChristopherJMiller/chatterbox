@@ -1,4 +1,4 @@
-use pulldown_cmark::{Parser, Event, Tag};
+use pulldown_cmark::{Parser, Event, Tag, CodeBlockKind, LinkType};
 use serde::Serialize;
 
 #[derive(Debug, Serialize)]
@@ -50,6 +50,8 @@ impl TryFrom<String> for Post {
           }
           content.push_str(format!("\n{} ", &header_tag).as_str());
         },
+        Event::SoftBreak => {},
+        Event::End(Tag::Heading(_, _, _)) => {},
         Event::Start(Tag::BlockQuote) => {
           block_quote = true;
         },
@@ -66,13 +68,36 @@ impl TryFrom<String> for Post {
           }
           content.push_str("\n\n");
         },
-        Event::Start(Tag::Link(_, link, _)) => {
+        Event::Code(text) => {
+          content.push_str(format!("`{}`", text).as_str());
+        },
+        Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(_))) => {
+          content.push_str("```\n");
+        },
+        Event::End(Tag::CodeBlock(CodeBlockKind::Fenced(_))) => {
+          content.push_str("```\n");
+        },
+        Event::End(Tag::Paragraph) => {},
+        Event::Start(Tag::Link(LinkType::Inline, link, _)) => {
           if parser_state != ParserState::Done {
             continue;
           }
 
-          song_link = Some(link.to_string());
-          skip_text = true;
+          if link.to_string().contains("open.spotify.com") {
+            song_link = Some(link.to_string());
+            skip_text = true;
+          } else {
+            content.push_str("[");
+          }
+        },
+        Event::End(Tag::Link(LinkType::Inline, link, _)) => {
+          if parser_state != ParserState::Done {
+            continue;
+          }
+
+          if !skip_text {
+            content.push_str(format!("]({})", link).as_str());
+          }
         },
         Event::Text(text) => {
           if skip_text {
@@ -112,7 +137,9 @@ impl TryFrom<String> for Post {
           }
           content.push_str(&text);
         },
-        _ => {}
+        ev => {
+          println!("Warning, skipping {:?}", ev);
+        }
       }
     }
     
