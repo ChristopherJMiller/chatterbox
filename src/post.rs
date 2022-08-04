@@ -72,10 +72,10 @@ impl TryFrom<String> for Post {
           content.push_str(format!("`{}`", text).as_str());
         },
         Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(_))) => {
-          content.push_str("```\n");
+          content.push_str("\n```\n");
         },
         Event::End(Tag::CodeBlock(CodeBlockKind::Fenced(_))) => {
-          content.push_str("```\n");
+          content.push_str("\n```\n");
         },
         Event::End(Tag::Paragraph) => {},
         Event::Start(Tag::Link(LinkType::Inline, link, _)) => {
