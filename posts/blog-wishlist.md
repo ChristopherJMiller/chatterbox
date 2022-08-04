@@ -21,7 +21,7 @@ The next step is what do I do with that markdown? Given markdown has rich conten
 
 The processing tool, `chatterbox`, is written in rust and takes a directory of manually placed blog posts and photos and converts them into something more structured and usable. A big part of this is stripping out all of the fields and title added by notion, since that’s not part of the body of the post. Here’s what the first post’s header looks like:
 
-```markdown
+```
 # Hello, again
 
 CoverCaption: My view of the Seattle skyline tonight
