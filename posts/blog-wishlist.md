@@ -1,7 +1,7 @@
 # A Blog Site Wishlist
 
 CoverCaption: My ArgoCD deployment for this website.
-CoverImage: argo-site.jpg
+CoverImage: argo.png
 Created: June 7, 2022 10:44 PM
 Tags: Project, Tech
 

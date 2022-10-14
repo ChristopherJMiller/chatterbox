@@ -1,7 +1,7 @@
 # Hello, again
 
 CoverCaption: My view of the Seattle skyline tonight
-CoverImage: skyline.png
+CoverImage: skyline.jpg
 Created: June 1, 2022 10:45 PM
 Tags: Rant
 

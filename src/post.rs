@@ -1,15 +1,86 @@
+use std::{fs::File, io::{Read, Write}, path::PathBuf};
+
 use pulldown_cmark::{Parser, Event, Tag, CodeBlockKind, LinkType};
 use serde::Serialize;
+use glob::glob;
+use tracing::warn;
+
+pub struct PostFile {
+  pub name: String,
+  pub file: String,
+}
+
+impl PostFile {
+  pub fn new(name: String, file: String) -> Self {
+    Self {
+      name,
+      file
+    }
+  }
+
+  pub fn from_glob(pattern: &str) -> Vec<Self> {
+    glob(pattern).expect("Failed to read glob pattern")
+      .filter(|x| x.is_ok())
+      .map(|x| x.unwrap())
+      .map(|path| {
+        let mut file = File::open(path.clone()).expect("Failed to open file");
+        let mut contents = String::new();
+        file.read_to_string(&mut contents).expect("Failed to read file");
+        Self::new(path.with_extension("").file_name().unwrap().to_string_lossy().to_string(), contents)
+      }).collect()
+  }
+}
+
+#[derive(Serialize)]
+pub struct PostEntry {
+  pub name: String,
+  pub description: String,
+  pub path: String,
+}
+
+impl PostEntry {
+  pub fn save_entries(entries: Vec<Self>) {
+    let json = serde_json::to_string(&entries).unwrap();
+    let _ = File::create("out/index.json").unwrap().write_all(json.replace("’", "'").as_bytes()).unwrap();
+  }
+}
 
 #[derive(Debug, Serialize)]
 pub struct Post {
   pub title: String,
   pub date: String,
+  #[serde(skip_serializing)]
+  pub real_cover_photo: String,
   pub cover_photo: String,
+  pub small_cover_photo: String,
   pub cover_caption: String,
   pub tags: Vec<String>,
   pub song_link: Option<String>,
   pub content: String,
+}
+
+impl Post {
+  pub fn save(&self, name: String) {
+    let json = serde_json::to_string(&self).unwrap();
+    let _ = File::create(format!("out/posts/{name}.json")).unwrap().write_all(json.replace("’", "'").as_bytes());
+  }
+
+  pub fn post_entry(&self, name: String) -> PostEntry {
+    let mut description = self.content
+      .replace("#", "")
+      .replace("\n", " ")
+      .split(" ")
+      .take(25)
+      .collect::<Vec<_>>()
+      .join(" ");
+
+    description.push_str("...");
+    PostEntry {
+      name: self.title.clone(),
+      description,
+      path: name,
+    }
+  }
 }
 
 #[derive(PartialEq)]
@@ -138,7 +209,7 @@ impl TryFrom<String> for Post {
           content.push_str(&text);
         },
         ev => {
-          println!("Warning, skipping {:?}", ev);
+          warn!("Warning, skipping {:?}", ev);
         }
       }
     }
@@ -166,11 +237,19 @@ impl TryFrom<String> for Post {
     Ok(Post {
       title: title.unwrap(),
       date: date.unwrap(),
-      cover_photo: cover_photo.unwrap(),
+      cover_photo: to_webp_extension(cover_photo.as_ref().unwrap(), false),
+      small_cover_photo: to_webp_extension(cover_photo.as_ref().unwrap(), true),
+      real_cover_photo: cover_photo.unwrap(),
       cover_caption: cover_caption.unwrap(),
       tags: tags.unwrap(),
       song_link,
       content,
     })
   }
+}
+
+fn to_webp_extension(photo: &String, small: bool) -> String {
+  let name = PathBuf::from(photo).with_extension("").file_name().unwrap().to_string_lossy().to_string();
+  let extension = if small { ".small.webp" } else { ".webp" };
+  format!("{name}{extension}")
 }

@@ -9,8 +9,9 @@ edition = "2021"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 pulldown-cmark = { version = "0.9", default-features = false, features = ["simd"] }
-image = "0.24"
-webp = "0.2"
+image = { version = "0.24.4", features = ["webp", "webp-encoder"] }
 glob = "0.3"
 serde-xml-rs = "0.5"
 chrono = "0.4"
+tracing = "0.1"
+tracing-subscriber = "0.3"
