@@ -1,5 +1,6 @@
 use std::{fs, path::PathBuf};
 
+use chrono::NaiveDateTime;
 use post::{PostFile, PostEntry};
 use tracing::{info, warn};
 
@@ -22,7 +23,14 @@ fn main() {
   prepare_output_dir();
   let post_files = PostFile::from_glob("posts/*.md");
   info!("Found {} Post Files", post_files.len());
-  let post_tuple = post_files.into_iter().map(|pf| (pf.name, Post::try_from(pf.file).unwrap())).collect::<Vec<_>>();
+  let mut post_tuple = post_files.into_iter().map(|pf| (pf.name, Post::try_from(pf.file).unwrap())).collect::<Vec<_>>();
+  post_tuple.sort_by(|(_, post_a), (_, post_b)| {
+    let a = NaiveDateTime::parse_from_str(&post_a.date, "%B %e, %Y %-I:%M %p").unwrap();
+    let b = NaiveDateTime::parse_from_str(&post_b.date, "%B %e, %Y %-I:%M %p").unwrap();
+
+    b.cmp(&a)
+  });
+
   let image_paths = post_tuple.iter().map(|(_, post)| post.real_cover_photo.clone());
   
   let entries = post_tuple.iter().map(|(name, post)| {
