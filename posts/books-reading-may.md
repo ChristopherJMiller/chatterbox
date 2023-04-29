@@ -26,3 +26,5 @@ This has been a very dense but productive read so far. I'm about a quarter of th
 Another book I'm in the middle of is Housing is a Homeless problem by Gregg Colburn and co. Colburn and their fellow researchers within the Puget Sound area postulate while homelessness has very regional reasons for their prevalence, there is a statistically significant trend that broad increases in affordable housing can enable us to drastically reduce or eliminate homelessness.
 
 I think this book takes a really great approach to tackling such a diverse and politically charged problem. I am also only a quarter into this book but looking forward to it's future discussions and plans.
+
+[https://open.spotify.com/track/27QEjySrTzYJWjWg118iFp?si=3850d0744e9a4b08](https://open.spotify.com/track/27QEjySrTzYJWjWg118iFp?si=3850d0744e9a4b08)
