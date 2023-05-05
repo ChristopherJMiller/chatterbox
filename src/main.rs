@@ -1,13 +1,14 @@
-use std::{fs, path::PathBuf};
+use std::{fs, path::PathBuf, env};
 
 use chrono::NaiveDateTime;
 use post::{PostFile, PostEntry};
 use tracing::{info, warn};
 
-use crate::{post::Post, image::PostImage};
+use crate::{post::Post, image::PostImage, notion::Notion};
 
 mod post;
 mod image;
+mod notion;
 
 fn prepare_output_dir() {
   info!("Preparing Output Directories");
@@ -16,9 +17,22 @@ fn prepare_output_dir() {
   fs::create_dir_all("out/posts").expect("Failed to create output dir");
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
   tracing_subscriber::fmt::init();
   info!("Hello Chatterbox!");
+
+  let notion_token = env::var("NOTION_TOKEN").expect("Missing NOTION_TOKEN");
+  let database_id = env::var("DATABASE_ID").expect("Missing DATABASE_ID");
+
+  let notion = Notion::new(notion_token);
+  let pages = notion.get_database(database_id).await;
+
+  for page in pages {
+    println!("{:?}", notion.get_blocks(page.id).await);
+  }
+
+  return;
 
   prepare_output_dir();
   let post_files = PostFile::from_glob("posts/*.md");
