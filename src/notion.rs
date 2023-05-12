@@ -2,44 +2,69 @@ use reqwest::{Client, StatusCode};
 use serde::Deserialize;
 use tracing::info;
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct BlockObject {
-  paragraph: Option<TextProperty>,
-  heading_1: Option<TextProperty>,
-  heading_2: Option<TextProperty>,
-  heading_3: Option<TextProperty>,
-  code: Option<TextProperty>,
+  pub paragraph: Option<TextProperty>,
+  pub heading_1: Option<TextProperty>,
+  pub heading_2: Option<TextProperty>,
+  pub heading_3: Option<TextProperty>,
+  pub code: Option<TextProperty>,
+  pub numbered_list_item: Option<TextProperty>,
+  pub bulleted_list_item: Option<TextProperty>,
+  pub quote: Option<TextProperty>,
+  pub to_do: Option<TextProperty>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
+pub struct RichTextAnnotations {
+  pub bold: bool,
+  pub italic: bool,
+  pub strikethrough: bool,
+  pub underline: bool,
+  pub code: bool
+}
+
+#[derive(Deserialize, Debug, Clone)]
 pub struct RichText {
-  plain_text: String,
+  pub plain_text: String,
+  pub annotations: RichTextAnnotations,
+  pub href: Option<String>,
 }
 
 #[derive(Deserialize, Debug)]
 pub struct TitleProperty {
-  title: Vec<RichText>,
+  pub title: Vec<RichText>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct TextProperty {
-  rich_text: Vec<RichText>
+  pub rich_text: Vec<RichText>
+}
+
+impl TextProperty {
+  pub fn build_nested_rich_text(&self, nested: &dyn Fn(&RichText) -> String, html_build: &dyn Fn(&str) -> String) -> String {
+    html_build(&self.rich_text.iter().map(|x| nested(x)).collect::<Vec<_>>().join(""))
+  }
+
+  pub fn build_html(&self, html_build: &dyn Fn(&str) -> String) -> String {
+    self.rich_text.iter().map(|x| x.plain_text.as_str()).map(html_build).collect::<Vec<_>>().join("")
+  }
 }
 
 #[derive(Deserialize, Debug)]
 pub struct FilePayload {
-  url: String
+  pub url: String
 }
 
 #[derive(Deserialize, Debug)]
 pub struct ImagePayload {
-  name: String,
-  file: FilePayload,
+  pub name: String,
+  pub file: FilePayload,
 }
 
 #[derive(Deserialize, Debug)]
 pub struct ImageProperty {
-  files: Vec<ImagePayload>,
+  pub files: Vec<ImagePayload>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -87,7 +112,7 @@ impl Notion {
     }
   }
 
-  pub async fn get_database(&self, id: String) -> Vec<PageObject> {
+  pub async fn get_database(&self, id: &str) -> Vec<PageObject> {
     let res = self.client.post(format!("https://api.notion.com/v1/databases/{}/query", id))
       .bearer_auth(self.token.clone())
       .header("Notion-Version", "2022-06-28")
@@ -113,13 +138,13 @@ impl Notion {
     return body.results;
   }
 
-  pub async fn get_blocks(&self, page_id: String) -> Vec<BlockObject> {
+  pub async fn get_blocks(&self, page_id: &str) -> Vec<BlockObject> {
     let res = self.client.get(format!("https://api.notion.com/v1/blocks/{}/children", page_id))
       .bearer_auth(self.token.clone())
       .header("Notion-Version", "2022-06-28")
       .send()
       .await
-      .expect("Failed to get data from Notion Database");
+      .expect("Failed to get data from Notion Blocks");
 
     if !res.status().is_success() {
       panic!("Failed with status {}", res.status());
