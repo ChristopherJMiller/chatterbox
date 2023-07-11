@@ -1,12 +1,12 @@
-FROM docker.io/rust:alpine as BUILDER
+FROM docker.io/rust:1-slim as BUILDER
+
+RUN apt-get update && apt-get install -y pkg-config libpq-dev openssl libssl-dev libclang-dev llvm
 
 WORKDIR /app
 
-RUN apk add --update build-base openssl-dev postgresql-dev
-
 ADD . .
 
-RUN --mount=type=cache,target=/app/target cargo install --locked --root install --path .
+RUN --mount=type=cache,target=/app/target cargo install --debug --locked --root install --path .
 
 FROM gcr.io/distroless/cc
 
