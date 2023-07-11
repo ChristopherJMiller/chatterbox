@@ -12,6 +12,10 @@ mkShell rec {
     clang
     llvmPackages.bintools
     rustup
+
+    # Dependencies
+    openssl
+    postgresql
   ];
 
   LD_LIBRARY_PATH = lib.makeLibraryPath buildInputs;

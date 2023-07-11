@@ -19,7 +19,14 @@ async fn main() {
 
   let notion_token = env::var("NOTION_TOKEN").expect("Missing NOTION_TOKEN");
   let database_id = env::var("DATABASE_ID").expect("Missing DATABASE_ID");
-  let db_url = env::var("DATABASE_URL").expect("Missing DATABASE_URL");
+  let db_url = env::var("DATABASE_URL").unwrap_or_else(|_| {
+    let username = env::var("DATABASE_USER").expect("No user, but also no datbase url provided");
+    let password = env::var("DATABASE_PASSWORD").expect("No password, but also no datbase url provided");
+    let host = env::var("DATABASE_HOST").expect("No host, but also no url provided");
+    let db = env::var("DATABASE_DB").expect("No DB, but also no url provided");
+
+    format!("postgresql://{}:{}@{}/{}", username, password, host, db)
+  });
 
   let mut conn = AsyncPgConnection::establish(&db_url).await.expect("Unable to connect to Database");
 

@@ -1,8 +1,8 @@
 FROM docker.io/rust:alpine as BUILDER
 
-WORKDIR /rust
+WORKDIR /app
 
-RUN apk add --update build-base
+RUN apk add --update build-base openssl-dev postgresql-dev
 
 ADD . .
 
