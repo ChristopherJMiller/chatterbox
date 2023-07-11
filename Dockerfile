@@ -6,9 +6,12 @@ RUN apk add --update build-base
 
 ADD . .
 
-RUN --mount=type=cache,target=/rust/target cargo run
+RUN --mount=type=cache,target=/app/target cargo install --locked --root install --path .
 
-FROM docker.io/nginx:1.21.3-alpine
+FROM gcr.io/distroless/cc
 
-COPY --from=BUILDER /rust/out /usr/share/nginx/html/blogapi
-ADD nginx.conf /etc/nginx/nginx.conf
+COPY --from=BUILDER /usr/lib /usr/lib
+COPY --from=BUILDER /lib /lib
+COPY --from=BUILDER /app/install /app/install
+
+CMD ["/app/install/bin/chatterbox"]
