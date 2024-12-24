@@ -1,6 +1,5 @@
-use reqwest::{Client, StatusCode};
+use reqwest::Client;
 use serde::Deserialize;
-use tracing::info;
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct BlockObject {
@@ -13,6 +12,8 @@ pub struct BlockObject {
   pub bulleted_list_item: Option<TextProperty>,
   pub quote: Option<TextProperty>,
   pub to_do: Option<TextProperty>,
+  pub embed: Option<UrlProperty>,
+  pub link_preview: Option<UrlProperty>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -67,7 +68,7 @@ pub struct ImageProperty {
   pub files: Vec<ImagePayload>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct UrlProperty {
   pub url: Option<String>
 }

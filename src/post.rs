@@ -35,6 +35,7 @@ impl CreatePost {
       info!("Existing post, updating {}", self.title);
       existing_post.title = self.title.clone();
       existing_post.body = self.body.clone();
+      existing_post.plaintext_body = self.plaintext_body.clone();
       existing_post.image_url = self.image_url.clone();
 
       diesel::update(posts.filter(id.eq(existing_post.id)))
@@ -73,6 +74,7 @@ fn rich_text_to_spans(rich_text: &RichText) -> String {
     (rich_text.annotations.underline, "underline"),
     (rich_text.annotations.code, "font-mono"),
     (rich_text.annotations.strikethrough, "strikethrough"),
+    (rich_text.href.is_some(), "underline"),
   ];
 
   let to_apply = annotations.into_iter().filter_map(|(apply, class_name)| if apply {
@@ -83,44 +85,83 @@ fn rich_text_to_spans(rich_text: &RichText) -> String {
 
   if to_apply.len() > 0 {
     if let Some(href) = &rich_text.href {
-      return markup::new! {
-        a[class=&to_apply, href=href] { @rich_text.plain_text }
-      }.to_string();
+      markup::new! {
+        a[class=&to_apply, href=href, target="_blank"] { @rich_text.plain_text }
+      }.to_string()
+    } else {
+      markup::new! {
+        span[class=&to_apply] { @rich_text.plain_text }
+      }.to_string()
     }
+  } else {
+    rich_text.plain_text.clone()
 
-    return markup::new! {
-      span[class=&to_apply] { @rich_text.plain_text }
-    }.to_string();
+  }
+}
+
+fn rich_text_parse(text: RichText) -> String {
+  let mut building_text = text.plain_text;
+
+  if text.annotations.bold {
+    building_text = format!("**{building_text}**");
   }
 
-  rich_text.plain_text.clone()
+  if text.annotations.italic {
+    building_text = format!("*{building_text}*");
+  }
+
+
+  if text.annotations.strikethrough {
+    building_text = format!("~~{building_text}~~");
+  }
+
+  if text.annotations.underline {
+    // Github Markdown Syntax
+    building_text = format!("<ins>{building_text}</ins>");
+  }
+
+  if text.annotations.code {
+    building_text = format!("`{building_text}`");
+  }
+
+  if let Some(href) = text.href {
+    building_text = format!("[{building_text}]({href})");
+  }
+
+  building_text
 }
 
 fn plaintext_block_obj_parse(value: BlockObject) -> String {
   if let Some(text) = value.paragraph {
-    text.rich_text.into_iter().map(|x| x.plain_text).collect::<Vec<_>>().join("\n")
+    text.rich_text.into_iter().map(rich_text_parse).collect::<Vec<_>>().join("\n")
   } else if let Some(text) = value.heading_1 {
-    text.rich_text.into_iter().map(|x| format!("# {}", x.plain_text)).collect::<Vec<_>>().join("\n")
+    text.rich_text.into_iter().map(rich_text_parse).map(|x| format!("# {x}")).collect::<Vec<_>>().join("\n")
 
   } else if let Some(text) = value.heading_2 {
-    text.rich_text.into_iter().map(|x| format!("## {}", x.plain_text)).collect::<Vec<_>>().join("\n")
+    text.rich_text.into_iter().map(rich_text_parse).map(|x| format!("## {x}")).collect::<Vec<_>>().join("\n")
 
   } else if let Some(text) = value.heading_3 {
-    text.rich_text.into_iter().map(|x| format!("### {}", x.plain_text)).collect::<Vec<_>>().join("\n")
+    text.rich_text.into_iter().map(rich_text_parse).map(|x| format!("### {x}")).collect::<Vec<_>>().join("\n")
 
   } else if let Some(text) = value.code {
-    text.rich_text.into_iter().map(|x| format!("```{}```", x.plain_text)).collect::<Vec<_>>().join("\n")
+    text.rich_text.into_iter().map(rich_text_parse).map(|x| format!("```{x}```")).collect::<Vec<_>>().join("\n")
 
   } else if let Some(text) = value.bulleted_list_item {
-    text.rich_text.into_iter().map(|x| format!("- {}", x.plain_text)).collect::<Vec<_>>().join("\n")
+    text.rich_text.into_iter().map(rich_text_parse).map(|x| format!("- {x}")).collect::<Vec<_>>().join("\n")
 
 
   } else if let Some(text) = value.numbered_list_item {
-    text.rich_text.into_iter().map(|x| format!("- {}", x.plain_text)).collect::<Vec<_>>().join("\n")
+    text.rich_text.into_iter().map(rich_text_parse).map(|x| format!("- {x}")).collect::<Vec<_>>().join("\n")
 
 
   } else if let Some(text) = value.quote {
-    text.rich_text.into_iter().map(|x| format!("\"{}\"", x.plain_text)).collect::<Vec<_>>().join("\n")
+    text.rich_text.into_iter().map(rich_text_parse).map(|x| format!("\"{x}\"")).collect::<Vec<_>>().join("\n")
+
+  } else if let Some(url) = value.embed.as_ref().and_then(|embed| embed.url.as_ref()) {
+    format!("[{url}]({url})")
+
+  } else if let Some(url) = value.link_preview.as_ref().and_then(|link_preview| link_preview.url.as_ref()) {
+    format!("[{url}]({url})")
 
   } else {
     panic!("Encountered unhandled block type {:?}", value)
